@@ -185,7 +185,10 @@ def delete_vpc(ec2, vpc_id, region):
     print(e.response['Error']['Message'])
 
   else:
-    print('VPC {} has been deleted from the {} region.'.format(vpc_id, region))
+    if not dryrun:
+      print('VPC {} has been deleted from the {} region.'.format(vpc_id, region))
+    else:
+      print('(Dry-run) VPC {} has been deleted from the {} region.'.format(vpc_id, region))
 
   return
 
@@ -230,7 +233,7 @@ def main(profile):
   ec2 = session.client('ec2', region_name='us-east-1')
 
   regions = get_regions(ec2)
-  if dryrun: print("Dryrun not actually deleting anything")
+  if dryrun: print("Dry-run, not actually deleting anything")
   for region in regions:
     print("Scanning Region: " + str(region))
     ec2 = session.client('ec2', region_name=region)
@@ -247,7 +250,11 @@ def main(profile):
     if vpc_id == 'none':
       print('VPC (default) was not found in the {} region.'.format(region))
       continue
-    print(" Removing VPC: " + str(vpc_id))
+
+    if dryrun:
+      print("(Dry-run) Removing VPC: " + str(vpc_id))
+    else:
+      print(" Removing VPC: " + str(vpc_id))
     # Are there any existing resources?  Since most resources attach an ENI, let's check..
 
     args = {
