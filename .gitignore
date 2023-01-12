@@ -8,6 +8,9 @@
 # Icon must end with two \r
 Icon
 
+# Editors/IDE
+.idea
+.idea/
 
 # Thumbnails
 ._*
