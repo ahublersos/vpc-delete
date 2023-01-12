@@ -7,9 +7,10 @@ Boto3 Version: 1.7.50
 
 """
 
+import sys
 import boto3
 from botocore.exceptions import ClientError
-
+dryrun = True
 
 def delete_igw(ec2, vpc_id):
   """
@@ -34,12 +35,20 @@ def delete_igw(ec2, vpc_id):
     igw_id = igw[0]['InternetGatewayId']
 
     try:
-      result = ec2.detach_internet_gateway(InternetGatewayId=igw_id, VpcId=vpc_id)
+      if not dryrun:
+        print("  Detaching " + str(igw_id))
+        result = ec2.detach_internet_gateway(InternetGatewayId=igw_id, VpcId=vpc_id)
+      else:
+        print("(Dry-run)  Detaching " + str(igw_id))
     except ClientError as e:
       print(e.response['Error']['Message'])
 
     try:
-      result = ec2.delete_internet_gateway(InternetGatewayId=igw_id)
+      if not dryrun:
+        print("  Deleting " + str(igw_id))
+        result = ec2.delete_internet_gateway(InternetGatewayId=igw_id)
+      else:
+        print("(Dry-run)  Deleting " + str(igw_id))
     except ClientError as e:
       print(e.response['Error']['Message'])
 
@@ -61,7 +70,11 @@ def delete_subs(ec2, args):
       sub_id = sub['SubnetId']
 
       try:
-        result = ec2.delete_subnet(SubnetId=sub_id)
+        if not dryrun:
+          print("  Deleting " + str(sub_id))
+          result = ec2.delete_subnet(SubnetId=sub_id)
+        else:
+          print("(Dry-run)  Deleting " + str(sub_id))
       except ClientError as e:
         print(e.response['Error']['Message'])
 
@@ -88,7 +101,11 @@ def delete_rtbs(ec2, args):
       rtb_id = rtb['RouteTableId']
         
       try:
-        result = ec2.delete_route_table(RouteTableId=rtb_id)
+        if not dryrun:
+          print("  Deleting " + str(rtb_id))
+          result = ec2.delete_route_table(RouteTableId=rtb_id)
+        else:
+          print("(Dry-run)  Deleting " + str(rtb_id))
       except ClientError as e:
         print(e.response['Error']['Message'])
 
@@ -113,7 +130,11 @@ def delete_acls(ec2, args):
       acl_id = acl['NetworkAclId']
 
       try:
-        result = ec2.delete_network_acl(NetworkAclId=acl_id)
+        if not dryrun:
+          print("  Deleting " + str(acl_id))
+          result = ec2.delete_network_acl(NetworkAclId=acl_id)
+        else:
+          print("(Dry-run)  Deleting " + str(acl_id))
       except ClientError as e:
         print(e.response['Error']['Message'])
 
@@ -138,7 +159,11 @@ def delete_sgps(ec2, args):
       sg_id = sgp['GroupId']
 
       try:
-        result = ec2.delete_security_group(GroupId=sg_id)
+        if not dryrun:
+          print("  Deleting " + str(sg_id))
+          result = ec2.delete_security_group(GroupId=sg_id)
+        else:
+          print("(Dry-run)  Deleting " + str(sg_id))
       except ClientError as e:
         print(e.response['Error']['Message'])
 
@@ -151,7 +176,11 @@ def delete_vpc(ec2, vpc_id, region):
   """
 
   try:
-    result = ec2.delete_vpc(VpcId=vpc_id)
+    if not dryrun:
+      print("  Deleting " + str(vpc_id))
+      result = ec2.delete_vpc(VpcId=vpc_id)
+    else:
+      print("(Dry-run)  Deleting " + str(vpc_id))
   except ClientError as e:
     print(e.response['Error']['Message'])
 
@@ -191,7 +220,7 @@ def main(profile):
   3.) Delete route tables
   4.) Delete network access lists
   5.) Delete security groups
-  6.) Delete the VPC 
+  6.) Delete the VPC
   """
 
   # AWS Credentials
@@ -201,9 +230,9 @@ def main(profile):
   ec2 = session.client('ec2', region_name='us-east-1')
 
   regions = get_regions(ec2)
-
+  if dryrun: print("Dryrun not actually deleting anything")
   for region in regions:
-
+    print("Scanning Region: " + str(region))
     ec2 = session.client('ec2', region_name=region)
 
     try:
@@ -218,7 +247,7 @@ def main(profile):
     if vpc_id == 'none':
       print('VPC (default) was not found in the {} region.'.format(region))
       continue
-
+    print(" Removing VPC: " + str(vpc_id))
     # Are there any existing resources?  Since most resources attach an ENI, let's check..
 
     args = {
@@ -237,7 +266,7 @@ def main(profile):
       return
 
     if eni:
-      print('VPC {} has existing resources in the {} region.'.format(vpc_id, region))
+      print(' VPC {} has existing resources in the {} region.'.format(vpc_id, region))
       continue
 
     result = delete_igw(ec2, vpc_id)
@@ -251,6 +280,16 @@ def main(profile):
 
 
 if __name__ == "__main__":
+  if ( len(sys.argv) == 2):
+    dryrun = True
+    main(profile=sys.argv[1])
+  elif ( len(sys.argv) == 3):
+    dryrun = (sys.argv[2].upper() == "TRUE")
+    main(profile=sys.argv[1])
+  else:
+    print("Usage: python3 remove_vpc.py <profilename> <dryrun>")
+    print("Usage: python3 remove_vpc.py development True")
+    print("Usage: python3 remove_vpc.py development False")
+    print("Usage: NOTE: dryrun defaults to True if excluded")
 
-  main(profile = '<YOUR_PROFILE>')
 
