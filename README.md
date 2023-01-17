@@ -12,16 +12,32 @@ This Python script attempts to delete the AWS default VPC in each region.
 
 **Setup:**
 
-Update with your AWS profile / credentials.
+Log in to AWS SSO
 
 ```
-main(profile = '<YOUR_PROFILE>')
+aws-sso-util login
 ```
 
 **Usage:**
 
 ```
-python remove_vpc.py
+python3 remove_vpc.py <profile-name> <dry-run>
+```
+
+For example, to do a dry-run in the Rapidsos-marketplace account you would run
+
+```
+python3 remove_vpc.py Rapidsos-marketplace.SuperAdmin true
+```
+
+It's recommended to run a dry-run first, and double check that the VPC IDs you see in 
+the output match the VPCs in the account you want to clean. 
+
+Once you're satisfied with output from the dry run you can run the same command with `false`
+as the dry-run flag:
+
+```
+python3 remove_vpc.py Rapidsos-marketplace.SuperAdmin false
 ```
 
 **Output:**
